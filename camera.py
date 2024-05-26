@@ -2,12 +2,13 @@ import configparser
 import keyboard
 import pygame.mouse
 import numpy as np
+from os import getcwd
 
-path = f".\\3D Graphics\\"
+path = f"{getcwd()}"
 
 # Config setup
 defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults.read(f"{path}/defaults.ini")
 
 screenWidth = int(defaults['screen']['width'])
 screenHeight = int(defaults['screen']['height'])
