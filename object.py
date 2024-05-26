@@ -2,11 +2,12 @@ import configparser
 import numpy
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from os import getcwd
 
-path = f".\\3D Graphics\\"
+path = getcwd()
 
 defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults.read(f"{path}/defaults.ini")
 
 fillColour = tuple(map(float, defaults['object']['fillColour'].split(", ")))
 
