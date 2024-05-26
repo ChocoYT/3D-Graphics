@@ -82,7 +82,7 @@ class Camera():
             self.moveZ += moveY * self.xDirSin * self.zDirSin
 
         if moveZ != 0:
-            self.moveX += moveZ * self.yDirSin * (self.zDirSin + 1)
+            self.moveX += moveZ * self.yDirSin * self.zDirSin
             self.moveY += moveZ * self.xDirSin * self.yDirCos
             self.moveZ += moveZ * self.yDirCos
         
