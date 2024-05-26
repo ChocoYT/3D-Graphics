@@ -3,6 +3,8 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from os import getcwd
+
 from camera import camera as cam
 from object import Object
 
@@ -10,11 +12,11 @@ from pygame.locals import OPENGL, DOUBLEBUF
 pygame.init()
 
 
-path = f".\\3D Graphics\\"
+path = getcwd()
 
 # Config setup
 defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults.read(f"{path}/defaults.ini")
 
 # Config variables
 screenWidth = int(defaults['screen']['width'])

@@ -1,16 +1,44 @@
 import configparser
-import keyboard
 import pygame.mouse
 import numpy as np
+from os import getcwd
+from pynput import keyboard
 
-path = f".\\3D Graphics\\"
+path = getcwd()
 
 # Config setup
 defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults.read(f"{path}/defaults.ini")
 
 screenWidth = int(defaults['screen']['width'])
 screenHeight = int(defaults['screen']['height'])
+
+# Dictionary to keep track of key states
+key_state = {}
+
+def on_press(key):
+    try:
+        key_state[key.char] = True
+    except AttributeError:
+        key_state[key] = True
+
+def on_release(key):
+    try:
+        key_state[key.char] = False
+    except AttributeError:
+        key_state[key] = False
+
+# Start the listener in a non-blocking way
+listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+listener.start()
+
+def is_pressed(key):
+    # Handle special keys
+    if isinstance(key, keyboard.Key):
+        return key_state.get(key, False)
+    # Handle character keys
+    else:
+        return key_state.get(key, False)
 
 class Camera():
     def __init__(self) -> None:
@@ -26,9 +54,10 @@ class Camera():
 
     def update(self) -> None:
         # Creates movement variables
-        moveX = int(keyboard.is_pressed("D")) - int(keyboard.is_pressed("A"))
-        moveY = int(keyboard.is_pressed("Q")) - int(keyboard.is_pressed("E"))
-        moveZ = int(keyboard.is_pressed("W")) - int(keyboard.is_pressed("S"))
+        
+        moveX = int(is_pressed("D")) - int(is_pressed("A")) # Ew
+        moveY = int(is_pressed("Q")) - int(is_pressed("E")) # Ew
+        moveZ = int(is_pressed("W")) - int(is_pressed("S")) # Ew
         moveDist = np.sqrt((moveX ** 2) + (moveY ** 2) + (moveZ ** 2))
 
         if moveDist > 1:
@@ -37,9 +66,9 @@ class Camera():
             moveZ /= moveDist
 
         # Creates rotation variables
-        rotX = int(keyboard.is_pressed("UP")) - int(keyboard.is_pressed("DOWN"))
-        rotY = int(keyboard.is_pressed("RIGHT")) - int(keyboard.is_pressed("LEFT"))
-        rotZ = int(keyboard.is_pressed("Z")) - int(keyboard.is_pressed("X"))
+        rotX = int(is_pressed(keyboard.Key.up)) - int(is_pressed(keyboard.Key.down)) # Ew
+        rotY = int(is_pressed(keyboard.Key.right)) - int(is_pressed(keyboard.Key.left)) # Ew
+        rotZ = int(is_pressed("Z")) - int(is_pressed("X")) # Ew
 
         rotDist = np.sqrt((rotX ** 2) + (rotY ** 2) + (rotZ ** 2))
 
