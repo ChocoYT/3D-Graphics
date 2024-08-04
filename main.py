@@ -1,7 +1,8 @@
-import configparser
+from configparser import ConfigParser
 import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from os import getcwd
 
 from camera import camera as cam
 from object import Object
@@ -9,12 +10,11 @@ from object import Object
 from pygame.locals import OPENGL, DOUBLEBUF
 pygame.init()
 
-
-path = f".\\3D Graphics\\"
+path = getcwd()
 
 # Config setup
-defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults = ConfigParser()
+defaults.read(f"{path}\\defaults.ini")
 
 # Config variables
 screenWidth = int(defaults['screen']['width'])
@@ -33,10 +33,11 @@ pygame.mouse.set_visible(False)
 clock = pygame.time.Clock()
 
 # Add perspective and depth
-gluPerspective(FOV / 2, (screenWidth / screenHeight), zNear, zFar)
+aspectRatio = screenWidth / screenHeight
+gluPerspective(FOV * aspectRatio / 2, aspectRatio, zNear, zFar)
 glEnable(GL_DEPTH_TEST)
 
-obj = Object(2)
+obj = Object(scale=2)
 
 run = True
 while run:
@@ -55,13 +56,13 @@ while run:
     pygame.mouse.set_pos((screenWidth / 2, screenHeight / 2))
 
     # Translate vertices in buffer
-    obj.translate(-cam.moveX, cam.moveY, cam.moveZ)
+    obj.translate(-cam.moveX, -cam.moveY, -cam.moveZ)
 
     # Rotate vertices in buffer
-    glRotatef(cam.rotX, 1, 0, 0)
-    glRotatef(cam.rotY, 0, 1, 0)
-    glRotatef(cam.rotZ, 0, 0, 1)
-
+    glRotatef(cam.objRotX, 1, 0, 0)
+    glRotatef(cam.objRotY, 0, 1, 0)
+    glRotatef(cam.objRotZ, 0, 0, 1)
+    print(f"{cam.xDir}, {cam.yDir}, {cam.zDir}")
     obj.draw()
 
     pygame.display.flip()

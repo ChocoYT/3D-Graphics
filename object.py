@@ -1,12 +1,13 @@
-import configparser
+from configparser import ConfigParser
 import numpy
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from os import getcwd
 
-path = f".\\3D Graphics\\"
+path = getcwd()
 
-defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults = ConfigParser()
+defaults.read(f"{path}\\defaults.ini")
 
 fillColour = tuple(map(float, defaults['object']['fillColour'].split(", ")))
 
@@ -40,18 +41,18 @@ class Object():
         (3, 7),
     ]
     surfaces = [
-        (0, 1, 2),
-        (0, 2, 3),
-        (4, 5, 6),
-        (4, 6, 7),
-        (0, 1, 4),
-        (1, 4, 5),
-        (1, 2, 5),
-        (2, 5, 6),
-        (2, 3, 6),
-        (3, 6, 7),
-        (3, 4, 7),
-        (4, 7, 0),
+        [(0, 1, 2), (1.0, 0.0, 0.0)],
+        [(0, 2, 3), (1.0, 0.0, 0.0)],
+        [(4, 5, 6), (1.0, 0.5, 0.0)],
+        [(4, 6, 7), (1.0, 0.5, 0.0)],
+        [(0, 1, 4), (1.0, 1.0, 0.0)],
+        [(1, 4, 5), (1.0, 1.0, 0.0)],
+        [(1, 2, 5), (0.0, 1.0, 0.0)],
+        [(2, 5, 6), (0.0, 1.0, 0.0)],
+        [(2, 3, 6), (0.0, 0.0, 1.0)],
+        [(3, 6, 7), (0.0, 0.0, 1.0)],
+        [(3, 4, 7), (1.0, 1.0, 1.0)],
+        [(0, 3, 4), (1.0, 1.0, 1.0)],
     ]
 
     def __init__(self, scale: int | float = 1) -> None:
@@ -59,18 +60,21 @@ class Object():
         self.vertices = list(numpy.multiply(numpy.array(Object.vertices), scale))
         self.surfaces = Object.surfaces
 
+        self.wireframe = False
+
     def translate(self, x: int, y: int, z: int) -> None:
-        self.vertices = list(map(lambda vertex: (vertex[0] + x, vertex[1] + y, vertex[2] + z), self.vertices))
+        self.vertices = list(map(lambda vertex: (vertex[0] + x, vertex[1] + y, vertex[2] + -z), self.vertices))
 
     def draw(self) -> None:
         self.outline()
-        self.fill()
+        if not self.wireframe:
+            self.fill()
 
     def fill(self) -> None:
         glBegin(GL_TRIANGLES)
-        for surface in self.surfaces:
-            for vertex in surface:
-                glColor3f(*fillColour)
+        for vertices, colour in self.surfaces:
+            glColor3f(*colour)
+            for vertex in vertices:
                 glVertex3fv(self.vertices[vertex])
         glEnd()
 

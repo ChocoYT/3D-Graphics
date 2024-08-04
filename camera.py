@@ -1,13 +1,14 @@
-import configparser
+from configparser import ConfigParser
 import keyboard
-import pygame.mouse
+from pygame import mouse, Vector3
 import numpy as np
+from os import getcwd
 
-path = f".\\3D Graphics\\"
+path = getcwd()
 
 # Config setup
-defaults = configparser.ConfigParser()
-defaults.read(f"{path}defaults.ini")
+defaults = ConfigParser()
+defaults.read(f"{path}\\defaults.ini")
 
 screenWidth = int(defaults['screen']['width'])
 screenHeight = int(defaults['screen']['height'])
@@ -20,44 +21,116 @@ class Camera():
         self.moveX, self.moveY, self.moveZ = 0, 0, 0
         self.rotX, self.rotY, self.rotZ = 0, 0, 0
 
+        self.objRotX, self.objRotY, self.objRotZ = 0, 0, 0
+
         self.moveSpeed = 0.1
         self.rotateSpeed = 1
         self.sensitivity = 0.15
 
     def update(self) -> None:
-        # Creates movement variables
-        moveX = int(keyboard.is_pressed("D")) - int(keyboard.is_pressed("A"))
-        moveY = int(keyboard.is_pressed("Q")) - int(keyboard.is_pressed("E"))
-        moveZ = int(keyboard.is_pressed("W")) - int(keyboard.is_pressed("S"))
-        moveDist = np.sqrt((moveX ** 2) + (moveY ** 2) + (moveZ ** 2))
-
-        if moveDist > 1:
-            moveX /= moveDist
-            moveY /= moveDist
-            moveZ /= moveDist
+        self.calculateTrigValues()
 
         # Creates rotation variables
         rotX = int(keyboard.is_pressed("UP")) - int(keyboard.is_pressed("DOWN"))
         rotY = int(keyboard.is_pressed("RIGHT")) - int(keyboard.is_pressed("LEFT"))
         rotZ = int(keyboard.is_pressed("Z")) - int(keyboard.is_pressed("X"))
 
-        rotDist = np.sqrt((rotX ** 2) + (rotY ** 2) + (rotZ ** 2))
-
-        if rotDist > 1:
-            rotX /= rotDist
-            rotY /= rotDist
-            rotZ /= rotDist
-
         # Accounts for mouse movement
-        mouseMoveX, mouseMoveY = pygame.mouse.get_rel()
-        if pygame.mouse.get_pressed()[2]:
-            rotX -= mouseMoveY * self.sensitivity
+        mouseMoveX, mouseMoveY = mouse.get_rel()
+        if mouse.get_pressed()[2]:
+            rotX += mouseMoveY * self.sensitivity
             rotY += mouseMoveX * self.sensitivity
 
+        rotateVector = Vector3(rotX, rotY, rotZ)
+        if rotateVector.length() > 1:
+            rotateVector.normalize()
+
+        self.rotate(rotateVector)
+
+        # Creates movement variables
+        moveX = int(keyboard.is_pressed("D")) - int(keyboard.is_pressed("A"))
+        moveY = int(keyboard.is_pressed("Q")) - int(keyboard.is_pressed("E"))
+        moveZ = int(keyboard.is_pressed("W")) - int(keyboard.is_pressed("S"))
+
+        moveVector = Vector3(moveX, moveY, moveZ)
+        if moveVector.length() > 1:
+            moveVector.normalize()
+
+        self.move(moveVector)
+
+
+    def move(self, vector: Vector3) -> None:
+        self.moveX, self.moveY, self.moveZ = 0, 0, 0
+
+        # Calculates movement
+        if vector.x != 0:
+            self.moveX += vector.x * self.yDirCos * self.zDirCos
+            self.moveY -= vector.x * self.xDirCos * self.zDirSin
+            self.moveZ -= vector.x * self.xDirCos * self.yDirSin
+
+        if vector.y != 0:
+            self.moveX += vector.y * self.yDirCos * self.zDirSin
+            self.moveY += vector.y * self.xDirCos * self.zDirCos
+            self.moveZ += vector.y * self.xDirSin * self.yDirCos
+
+        if vector.z != 0:
+            self.moveX += vector.z * self.yDirSin * self.zDirCos
+            self.moveY -= vector.z * self.xDirSin * self.zDirCos
+            self.moveZ += vector.z * self.xDirCos * self.yDirCos
+
+        # Multiplies by speed
+        self.moveX *= self.moveSpeed
+        self.moveY *= self.moveSpeed
+        self.moveZ *= self.moveSpeed
+
+        # Moves camera
+        self.x += self.moveX
+        self.y += self.moveY
+        self.z += self.moveZ
+
+    def rotate(self, vector: Vector3) -> None:
+        self.rotX = vector.x
+        self.rotY = vector.y
+        self.rotZ = vector.z
+
+        '''
+        # Calculates object rotation
+        self.objRotX, self.objRotY, self.objRotZ = 0, 0, 0
+
+        # Rotation looking at X
+        self.objRotX += self.rotZ * self.xDirCos * self.yDirSin * self.zDirCos   # Rotation looking at +- X (xDir = 0 / 180)
+        self.objRotY += self.rotY * self.xDirCos * self.yDirSin * self.zDirCos
+
+        self.objRotX += self.rotY * self.xDirSin * self.yDirSin * self.zDirCos   # Rotation looking at +- X (xDir = 90 / 270)
+        self.objRotY += self.rotZ * self.xDirSin * self.yDirSin * self.zDirCos
+
+        self.objRotZ += self.rotX * self.yDirSin * self.zDirCos                  # Rotation at +- X
+
+        # Rotation looking at Y
+        self.objRotX += self.rotX * self.xDirCos * self.yDirCos * self.zDirCos   # Rotation looking at +- Y (yDir = 0 / 180)
+        self.objRotY += self.rotZ * self.xDirCos * self.yDirCos * self.zDirCos
+
+        self.objRotX += self.rotZ * self.xDirCos * self.yDirSin * self.zDirCos   # Rotation looking at +- Y (yDir = 90 / 270)
+        self.objRotY += self.rotX * self.xDirCos * self.yDirSin * self.zDirCos
+
+        self.objRotZ += self.rotY * self.xDirCos * self.zDirCos                  # Rotation at +- Y
+
+        # Rotation looking at Z
+        self.objRotX += self.rotX * self.xDirCos * self.yDirCos * self.zDirCos   # Rotation looking at +- Z (zDir = 0 / 180)
+        self.objRotY += self.rotY * self.xDirCos * self.yDirCos * self.zDirCos
+
+        self.objRotX += self.rotY * self.xDirCos * self.yDirCos * self.zDirSin   # Rotation looking at +- Z (zDir = 90 / 270)
+        self.objRotY += self.rotX * self.xDirCos * self.yDirCos * self.zDirSin
+
+        self.objRotZ += self.rotZ * self.xDirCos * self.yDirCos                  # Rotation at +- Z
+        '''
+        self.objRotX, self.objRotY, self.objRotZ = self.rotX, self.rotY, self.rotZ
+
+
         # Calculates rotation
-        self.rotX = -rotX * self.rotateSpeed
-        self.rotY = rotY * self.rotateSpeed
-        self.rotZ = -rotZ * self.rotateSpeed
+        self.rotX *= self.rotateSpeed
+        self.rotY *= self.rotateSpeed
+        self.rotZ *= self.rotateSpeed
 
         # Rotates camera
         self.xDir += self.rotX
@@ -68,33 +141,6 @@ class Camera():
         self.yDir %= 360
         self.zDir %= 360
 
-        self.calculateTrigValues()
-
-        # Calculates movement
-        if moveX != 0:
-            self.moveX = moveX * self.yDirCos
-            self.moveY = moveX * self.xDirSin * self.yDirSin
-            self.moveZ = moveX * self.yDirSin * self.zDirCos
-
-        if moveY != 0:
-            self.moveX += moveY * self.xDirCos * self.zDirSin
-            self.moveY += moveY * self.yDirSin
-            self.moveZ += moveY * self.xDirSin * self.zDirSin
-
-        if moveZ != 0:
-            self.moveX += moveZ * self.yDirSin * self.zDirSin
-            self.moveY += moveZ * self.xDirSin * self.yDirCos
-            self.moveZ += moveZ * self.yDirCos
-        
-        # Multiplies by speed and inverts
-        self.moveX *= self.moveSpeed
-        self.moveY *= self.moveSpeed
-        self.moveZ *= self.moveSpeed
-
-        # Moves camera
-        self.x += self.moveX
-        self.y += self.moveY
-        self.z += self.moveZ
 
     def calculateTrigValues(self) -> None:
         self.xDirSin = np.sin(np.deg2rad(self.xDir))
